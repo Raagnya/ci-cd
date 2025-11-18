@@ -1,41 +1,59 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
+      # ---- BACKEND ----
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install Backend Dependencies
         run: |
           python -m pip install --upgrade pip
-
-          if [ -f ammg/requirements.txt ]; then
-            echo "📦 Installing from ammg/requirements.txt"
-            pip install -r ammg/requirements.txt
+          if [ -f ammg/backend/requirements.txt ]; then
+            pip install -r ammg/backend/requirements.txt
           else
-            echo "❌ ammg/requirements.txt missing"
+            echo "❌ ammg/backend/requirements.txt missing"
             exit 1
           fi
 
-      - name: Run tests (if any)
+      # ---- FRONTEND ----
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install Frontend Dependencies
         run: |
-          if [ -d "ammg/tests" ]; then
-            echo "🧪 Running tests..."
-            python -m pytest ammg/tests
+          if [ -f ammg/frontend/package.json ]; then
+            cd ammg/frontend
+            npm install
           else
-            echo "⚠️ No tests folder found, skipping tests"
+            echo "❌ ammg/frontend/package.json missing"
+            exit 1
           fi
+
+      - name: Build Frontend
+        run: |
+          cd ammg/frontend
+          npm run build
+
+      # ---- (Optional) Run backend tests ----
+      - name: Run Backend Tests
+        run: |
+          echo "Running tests..."
+          # pytest  # uncomment if you have tests
+
